@@ -2,7 +2,7 @@
 #define SIMLYLIST_H
 
 #include <string>
-#include <nlohmann/json.hpp>
+#include "json.hpp"
 
 #include "myVector.h"
 
