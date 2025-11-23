@@ -28,6 +28,37 @@ void insertDoc(HashMap* map, const string& jsonCommand) {
 
 }
 
+void help() {
+    cout << "./no_sql_dbm -h, --help    показать эту справку" << endl;
+    cout << "./no_sql_dbm <filename> <command> <query> " << endl;
+    cout << "=========filename==============" << endl;
+    cout
+    << "Файл автоматически сохраняется с разрешением .json по пути /директория проекта/my_database/имя вашего файла.json "
+            << endl;
+    cout << "=========command===============" << endl;
+    cout << "Перечень доступных команд: " << endl;
+    cout << "insert - добавить документ в коллекцию " << endl;
+    cout << "find   - поиск документа по параметрам " << endl;
+    cout << "delete - удаление документа по параметрам " << endl;
+    cout << "=========query=================" << endl;
+    cout << "Доступные операторы и примеры их использования в поиске и в удалении: " << endl;
+    cout << "{\"$eq\": [{\"_id\": \"1763888722455_1021\"}]}     [$eq - равенство (используется по умолчанию)]" << endl;
+    cout << "{\"name\": \"Alice\", \"city\": \"London\"}        [неявный AND]" << endl;
+    cout << "{\"$and\": [{\"age\": 25}, {\"city\": \"Paris\"}]} [явный $AND]" << endl;
+    cout << "{\"$or\": [{\"age\": 25}, {\"city\": \"Paris\"}]}  [$or]" << endl;
+    cout << "{\"age\": {\"$gt\": 20}}                           [$gt - больше]" << endl;
+    cout << "{\"age\": {\"$lt\": 20}}                           [$gt - меньше]" << endl;
+    cout << "{\"name\": {\"$like\": \"Ali%\"}}                  [$like - поиск по маске строки (% - любая строка, _ - один символ)]" << endl;
+    cout << "{\"city\": {\"$in\": [\"London\", \"Paris\"]}}     [$in - проверить принадлежность к массиву]" << endl;
+    cout << "=========Примеры использования=========" << endl;
+    cout << "./no_sql_dbms collection insert \'{\"name\": \"Alice\", \"age\": 25, \"city\": \"London\"}\'" << endl;
+    cout << "Вставка документа со случайным сгенерированным id" << endl;
+    cout << "./no_sql_dbms my_database find \'{\"$or\": [{\"age\": 25}, {\"city\": \"Paris\"}]}\'" << endl;
+    cout << "Поиск документа с оператором $or" << endl;
+    cout << "./no_sql_dbms my_database delete \'{\"name\": {\"$like\": \"A%\"}}\' " << endl;
+    cout << "Удаление документа с использованием оператора $like" << endl;
+}
+
 bool matchesCondition(const json& doc, const string& field, const json& condition) {
     if (!doc.contains(field)) return false;
 
@@ -58,8 +89,8 @@ bool matchesCondition(const json& doc, const string& field, const json& conditio
             if (!found) return false;
         } else if (op == "$like") {
             if (!value.is_string() || !cond_val.is_string()) return false;
-            auto pattern = cond_val.get<string>();
-            auto text = value.get<string>();
+            const auto pattern = cond_val.get<string>();
+            const auto text = value.get<string>();
 
             size_t pi = 0, ti = 0;
             const size_t textLen = text.size();
@@ -114,14 +145,14 @@ bool matchesQuery(const json& doc, const json& query) {
 }
 
 
-void findDoc(HashMap* map, const string& jsonCommand) {
-    json query = json::parse(jsonCommand);
+void findDoc(const HashMap* map, const string& jsonCommand) {
+    const json query = json::parse(jsonCommand);
     const auto allItems = map->items();
     bool found = false;
 
-    for (size_t i = 0; i < allItems.size(); i++) {
-        if (matchesQuery(allItems[i].second, query)) {
-            cout << allItems[i].second.dump(4) << endl;
+    for (const auto& [fst, snd] : allItems) {
+        if (matchesQuery(snd, query)) {
+            cout << snd.dump(4) << endl;
             found = true;
         }
     }
@@ -131,14 +162,14 @@ void findDoc(HashMap* map, const string& jsonCommand) {
 }
 
 void deleteDoc(HashMap* map, const string& jsonCommand) {
-    json query = json::parse(jsonCommand);
+    const json query = json::parse(jsonCommand);
     const auto allItems = map->items();
     bool deleted = false;
 
-    for (size_t i = 0; i < allItems.size(); i++) {
-        if (matchesQuery(allItems[i].second, query)) {
-            if (map->deleteById(allItems[i].first)) {
-                cout << "Удален документ: " << allItems[i].first << endl;
+    for (const auto &[fst, snd] : allItems) {
+        if (matchesQuery(snd, query)) {
+            if (map->deleteById(fst)) {
+                cout << "Удален документ: " << fst << endl;
                 deleted = true;
             }
         }
@@ -154,7 +185,12 @@ int main(int argc, char* argv[]) {
         HashMap map(5);
 
         string filename, query, jsonCommand;
-        if (argc < 4) throw runtime_error ("недостаточно аргументов");
+        if (argc < 2) throw runtime_error ("недостаточно аргументов");
+
+        if (!string(argv[1]).empty() && (string(argv[1]) == "--help" || string(argv[1]) == "-h")) {
+            help();
+            return 0;
+        }
 
         if (!string(argv[1]).empty()) {
             filename = "/home/dimasik/Рабочий стол/1praka/my_database/"
@@ -177,8 +213,7 @@ int main(int argc, char* argv[]) {
 
         // Открытие коллекции и загрузка её в hashmap
         json docs = json::array();
-        ifstream file(filename);
-        if (file.is_open()) {
+        if (ifstream file(filename); file.is_open()) {
             try {
                 file >> docs;
             } catch (...) {
@@ -200,7 +235,7 @@ int main(int argc, char* argv[]) {
             deleteDoc(&map, jsonCommand);
             map.saveToFile(filename);
         } else {
-            throw runtime_error("неизвестный запрос");
+            throw runtime_error("неизвестный запрос, введите ключ -h, --help для справки");
         }
 
 
