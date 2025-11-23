@@ -210,7 +210,7 @@ int main(int argc, char* argv[]) {
         }
 
         if (argc == 3) {
-            if (!string(argv[2]).empty()) throw runtime_error("пустой аргумент запроса");
+            if (string(argv[2]).empty()) throw runtime_error("пустой аргумент запроса");
             string command = argv[2];
             if (command == "print") {
                 cout << "=== Коллекция: " << collection_name << " ===" << endl;
@@ -228,8 +228,8 @@ int main(int argc, char* argv[]) {
         if (argc != 4) {
             throw runtime_error("ожидается: <коллекция> <команда> <json>");
         }
-        if (!string(argv[2]).empty()) throw runtime_error("пустой аргумент запроса");
-        if (!string(argv[3]).empty()) throw runtime_error("пустой аргумент json запроса");
+        if (string(argv[2]).empty()) throw runtime_error("пустой аргумент запроса");
+        if (string(argv[3]).empty()) throw runtime_error("пустой аргумент json запроса");
         string command = argv[2];
         string jsonCommand = argv[3];
 
