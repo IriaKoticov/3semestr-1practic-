@@ -89,10 +89,10 @@ void HashMap::print() const {
 }
 
 void HashMap::saveToFile(const string& filename) const {
-    json data = json::object();
+    json data = json::array();
     auto allItems = items();
-    for (size_t i = 0; i < allItems.size(); i++) {
-        data[allItems[i].first] = allItems[i].second;
+    for (const auto& item : allItems) {
+        data.push_back(item.second);
     }
     ofstream file(filename);
     file << data.dump(4);

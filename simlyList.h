@@ -2,7 +2,7 @@
 #define SIMLYLIST_H
 
 #include <string>
-#include "json.hpp"
+#include <nlohmann/json.hpp>
 
 #include "myVector.h"
 
@@ -22,7 +22,7 @@ public:
     ~SimplyList();
 
     [[nodiscard]] nlohmann::json getData() const {return head->data;}
-    [[nodiscard]] SimplyNode* getHead() const { return head; }
+    [[nodiscard]] SimplyNode * getHead() const { return head; }
     [[nodiscard]] SimplyNode* getTail() const { return tail; }
 
     [[nodiscard]] MyVector<std::pair<std::string, nlohmann::json>> items() const;

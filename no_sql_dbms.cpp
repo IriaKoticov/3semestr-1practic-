@@ -25,7 +25,7 @@ void insertDoc(HashMap* map, const string& jsonCommand) {
     string id = generate_id();
     doc["_id"] = id;
     map->hashMapInsert(id, doc);
-
+    cout << "Document inserted successfully." << endl;
 }
 
 void help() {
@@ -42,10 +42,10 @@ void help() {
     cout << "delete - удаление документа по параметрам " << endl;
     cout << "=========query=================" << endl;
     cout << "Доступные операторы и примеры их использования в поиске и в удалении: " << endl;
-    cout << "{\"$eq\": [{\"_id\": \"1763888722455_1021\"}]}     [$eq - равенство (используется по умолчанию)]" << endl;
+    cout << R"({"$eq": [{"_id": "1763888722455_1021"}]}     [$eq - равенство (используется по умолчанию)])" << endl;
     cout << "{\"name\": \"Alice\", \"city\": \"London\"}        [неявный AND]" << endl;
     cout << "{\"$and\": [{\"age\": 25}, {\"city\": \"Paris\"}]} [явный $AND]" << endl;
-    cout << "{\"$or\": [{\"age\": 25}, {\"city\": \"Paris\"}]}  [$or]" << endl;
+    cout << R"('{"$or": [{"age": 25}, {"city": "Paris"}]}  [$or]')" << endl;
     cout << "{\"age\": {\"$gt\": 20}}                           [$gt - больше]" << endl;
     cout << "{\"age\": {\"$lt\": 20}}                           [$gt - меньше]" << endl;
     cout << "{\"name\": {\"$like\": \"Ali%\"}}                  [$like - поиск по маске строки (% - любая строка, _ - один символ)]" << endl;
@@ -53,9 +53,9 @@ void help() {
     cout << "=========Примеры использования=========" << endl;
     cout << "./no_sql_dbms collection insert \'{\"name\": \"Alice\", \"age\": 25, \"city\": \"London\"}\'" << endl;
     cout << "Вставка документа со случайным сгенерированным id" << endl;
-    cout << "./no_sql_dbms my_database find \'{\"$or\": [{\"age\": 25}, {\"city\": \"Paris\"}]}\'" << endl;
+    cout << "./no_sql_dbms collection find \'{\"$or\": [{\"age\": 25}, {\"city\": \"Paris\"}]}\'" << endl;
     cout << "Поиск документа с оператором $or" << endl;
-    cout << "./no_sql_dbms my_database delete \'{\"name\": {\"$like\": \"A%\"}}\' " << endl;
+    cout << "./no_sql_dbms collection delete \'{\"name\": {\"$like\": \"A%\"}}\' " << endl;
     cout << "Удаление документа с использованием оператора $like" << endl;
 }
 
@@ -182,34 +182,16 @@ void deleteDoc(HashMap* map, const string& jsonCommand) {
 
 int main(int argc, char* argv[]) {
     try {
-        HashMap map(5);
-
-        string filename, query, jsonCommand;
-        if (argc < 2) throw runtime_error ("недостаточно аргументов");
-
-        if (!string(argv[1]).empty() && (string(argv[1]) == "--help" || string(argv[1]) == "-h")) {
+        if (argc == 1 || (argc == 2 && (string(argv[1]) == "-h" || string(argv[1]) == "--help"))) {
             help();
             return 0;
-        }
 
-        if (!string(argv[1]).empty()) {
-            filename = "/home/dimasik/Рабочий стол/1praka/my_database/"
-                                                         + string(argv[1]) + ".json";
-        } else {
-            throw runtime_error ("имя файла не может быть пустым");
         }
+        string collection_name = argv[1];
+        string filename = "my_database/" + collection_name + ".json";
+        std::filesystem::create_directories("my_database");
 
-        if (!string(argv[2]).empty()) {
-            query = argv[2];
-        } else {
-            throw runtime_error("запрос пустой или неверный");
-        }
-
-        if (!string(argv[3]).empty()) {
-            jsonCommand = argv[3];
-        } else {
-            throw runtime_error("аргумент запроса пустой");
-        }
+        HashMap map(3);
 
         // Открытие коллекции и загрузка её в hashmap
         json docs = json::array();
@@ -222,19 +204,46 @@ int main(int argc, char* argv[]) {
             file.close();
         }
 
-        for (auto w : docs) {
-            map.hashMapInsert(w["_id"], w);
+        for (const auto& doc : docs) {
+            string id = doc["_id"];
+            map.hashMapInsert(id, doc);
         }
 
-        if (query == "insert") {
+        if (argc == 3) {
+            if (!string(argv[2]).empty()) throw runtime_error("пустой аргумент запроса");
+            string command = argv[2];
+            if (command == "print") {
+                cout << "=== Коллекция: " << collection_name << " ===" << endl;
+                map.print();
+                return 0;
+            } else {
+                if (command == "find" || command == "insert" || command == "delete") {
+                    throw runtime_error("команда '" + command + "' требует json-запрос");
+                } else {
+                    throw runtime_error("неизвестная команда");
+                }
+            }
+        }
+
+        if (argc != 4) {
+            throw runtime_error("ожидается: <коллекция> <команда> <json>");
+        }
+        if (!string(argv[2]).empty()) throw runtime_error("пустой аргумент запроса");
+        if (!string(argv[3]).empty()) throw runtime_error("пустой аргумент json запроса");
+        string command = argv[2];
+        string jsonCommand = argv[3];
+
+        if (command == "insert") {
             insertDoc(&map, jsonCommand);
             map.saveToFile(filename);
-        } else if (query == "find") {
+        } else if (command == "find") {
             findDoc(&map, jsonCommand);
-        } else if (query == "delete") {
+        } else if (command == "delete") {
             deleteDoc(&map, jsonCommand);
             map.saveToFile(filename);
-        } else {
+        } else if (command == "print"){
+            map.print();
+        }else {
             throw runtime_error("неизвестный запрос, введите ключ -h, --help для справки");
         }
 

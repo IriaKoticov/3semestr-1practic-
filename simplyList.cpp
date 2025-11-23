@@ -43,7 +43,7 @@ bool SimplyList::deleteByKey(const string &key) {
     if (head == nullptr) return false;
 
     if (head->id_ == key) {
-        SimplyNode* temp = head;
+        const SimplyNode* temp = head;
         head = head->next;
         if (tail == temp) tail = nullptr;
         delete temp;
@@ -57,7 +57,7 @@ bool SimplyList::deleteByKey(const string &key) {
 
     if (current->next == nullptr) return false;
 
-    SimplyNode* temp = current->next;
+    const SimplyNode* temp = current->next;
     current->next = temp->next;
 
     if (temp == tail) tail = current;
