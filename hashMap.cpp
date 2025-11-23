@@ -39,6 +39,9 @@ int HashMap::hashFunction(const std::string &str) const {
 }
 
 void HashMap::hashMapInsert(const std::string &key,const json &value) {
+    if (static_cast<double>(size) / capacity >= 0.75) {
+        rehash();
+    }
     const int index = hashFunction(key);
     table[index].list->addHead(key, value);
     size++;
@@ -95,5 +98,34 @@ void HashMap::saveToFile(const string& filename) const {
     file << data.dump(4);
 }
 
+void HashMap::rehash() {
+    const size_t oldCapacity = capacity;
+    const HashMapNode* oldTable = table;
+
+    capacity = capacity * 2 + 1;
+    size = 0;
+
+    table = new HashMapNode[capacity];
+    for (size_t i = 0; i < capacity; i++) {
+        table[i].list = new SimplyList;
+    }
+
+    for (size_t i = 0; i < oldCapacity; i++) {
+        const SimplyList* currentList = oldTable[i].list;
+        const auto current = currentList->getHead();
+
+        while (current != nullptr) {
+            hashMapInsert(current->id_, current->data);
+            current -> next;
+        }
+    }
+
+    for (size_t i = 0; i < oldCapacity; i++) {
+        delete oldTable[i].list;
+    }
+
+    delete[] oldTable;
+
+}
 
 

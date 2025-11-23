@@ -33,6 +33,7 @@ public:
 
     void saveToFile(const std::string& filename) const;
     void print() const;
+    void rehash();
     //std::pair<std::string, std::string> searchByKey(const std::string& key);
 
 };
